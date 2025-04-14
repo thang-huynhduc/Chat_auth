@@ -1,20 +1,13 @@
-"use client"
-import { signOut } from "next-auth/react"
-import { Button } from "@/components/ui/button"
+'use client';
+import { logout } from '@/lib/api';
 
-const SignOutButton = () => {
-  const handleLogout = async () => {
-    signOut({callbackUrl: '/auth/login'});
-  };
-
+export default function SignOutButton() {
   return (
-    <Button
-      variant="destructive"
-      onClick={handleLogout}
+    <button
+      onClick={() => logout()}
+      style={{ padding: '8px 16px', marginTop: '16px' }}
     >
-      Đăng xuất
-    </Button>
-  )
+      Sign Out
+    </button>
+  );
 }
-
-export default SignOutButton

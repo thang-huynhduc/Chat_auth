@@ -1,39 +1,48 @@
-import axios from "axios";
-import type { NextAuthConfig } from "next-auth";
-import Credentials from "next-auth/providers/credentials";
+import type { NextAuthConfig } from 'next-auth';
+import CredentialsProvider from 'next-auth/providers/credentials';
+import { login } from '@/lib/api';
 
 export default {
   providers: [
-    Credentials({
+    CredentialsProvider({
+      name: 'Credentials',
       credentials: {
-        username: { label: "Username", type: "text" },
-        password: { label: "Password", type: "password" },
+        username: { label: 'Username', type: 'text' },
+        password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials) {
-        try {
-          const res = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/v1/api/login`, {
-            username: credentials.username,
-            password: credentials.password,
-          });
+        console.log('Authorize called with credentials:', credentials);
 
-          const data = res.data;
-          console.log("Authorize data:", data); // Gỡ lỗi
-          if (data.code === 200) {
-            return {
+        if (typeof credentials?.username !== 'string' || typeof credentials?.password !== 'string') {
+          console.error('Missing or invalid credentials:', credentials);
+          return null;
+        }
+
+        try {
+          const response = await login(credentials.username, credentials.password);
+          console.log('Authorize login response:', response);
+
+          if (response.success && response.data?.code === 200) {
+            const data = response.data;
+            const user = {
               id: data.account.id,
               username: data.account.username,
               email: data.account.email,
               accessToken: data.tokens.accessToken,
               refreshToken: data.tokens.refreshToken,
-              apiKeyAIService: data.apiKeyAIService,
+              apiKeyAIService: '', // Placeholder
             };
+            console.log('Authorize returning user:', user);
+            return user;
+          } else {
+            console.error('Login failed:', response.error);
+            return null;
           }
-          return null;
         } catch (error) {
-          console.error("Login error:", error);
+          console.error('Authorize error:', error);
           return null;
         }
       },
     }),
-]
+  ],
 } satisfies NextAuthConfig;

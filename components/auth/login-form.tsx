@@ -9,9 +9,9 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Button } from '@/components/ui/button'
 import { useTransition } from 'react'
 import { CardWrapper } from '@/components/auth/card-wrapper'
-
-import axios from 'axios'
-
+import { toast } from 'sonner'
+import { signIn } from 'next-auth/react'
+import { DEFAULT_LOGIN_REDIRECT } from '@/route'
 
 const LoginForm = () => {
 
@@ -27,13 +27,24 @@ const LoginForm = () => {
   const onSubmit = async (values: z.infer<typeof LoginSchema>) => {
     startTransition(async () => {
       try {
-        await axios.post('/api/auth/login', values);
-      } catch (error) {
-        console.error("Sign-in error:", error);
-        alert("Có lỗi xảy ra khi đăng nhập.");
+        const result = await signIn('credentials', {
+          redirect: false,
+          username: values.username,
+          password: values.password,
+        });
+        if (result?.error) {
+          toast.error('Đăng nhập thất bại');
+        } else {
+          toast.success('Login Successful')
+          window.location.href =  DEFAULT_LOGIN_REDIRECT;
+        }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } catch (err: any) {
+        toast.error(err.message || 'Dữ liệu không hợp lệ');
       }
     });
   };
+  
 
   return (
     <CardWrapper
@@ -90,6 +101,7 @@ const LoginForm = () => {
           <Button
             type="submit"
             className="w-full"
+            disabled={isPending}
           >
             Login
           </Button>

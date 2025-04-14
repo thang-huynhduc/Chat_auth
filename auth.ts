@@ -1,40 +1,90 @@
-import NextAuth from "next-auth"
+import NextAuth from "next-auth";
+import CredentialsProvider from "next-auth/providers/credentials";
+import { login } from "@/lib/api";
 
-import authConfig from "@/auth.config"
- 
-export const { 
+export const {
   auth,
   handlers,
   signIn,
-  signOut 
+  signOut,
 } = NextAuth({
+  providers: [
+    CredentialsProvider({
+      name: "Credentials",
+      credentials: {
+        username: { label: "Username", type: "text" },
+        password: { label: "Password", type: "password" },
+      },
+      async authorize(credentials) {
+        console.log("Authorize called with credentials:", credentials);
+        if (
+          typeof credentials?.username !== "string" ||
+          typeof credentials?.password !== "string"
+        ) {
+          console.error("Missing or invalid credentials:", credentials);
+          return null;
+        }
+
+        try {
+          const response = await login(credentials.username, credentials.password);
+          if (response.success && response.data?.code === 200) {
+            const data = response.data;
+            const user = {
+              id: data.account.id,
+              username: data.account.username,
+              email: data.account.email,
+              accessToken: data.tokens.accessToken,
+              refreshToken: data.tokens.refreshToken,
+              apiKeyAIService: "",
+            };
+            return user;
+          } else {
+            console.error("Login failed:", response.error);
+            return null;
+          }
+        } catch (error) {
+          console.error("Authorize error:", error);
+          return null;
+        }
+      },
+    }),
+  ],
+  session: { strategy: "jwt" },
   callbacks: {
     async jwt({ token, user }) {
-      console.log("JWT callback user:", user); // Gỡ lỗi
       if (user) {
         token.id = user.id as string;
-        token.username = user.username as string;
-        token.email = user.email;
-        token.accessToken = user.accessToken as string;
-        token.refreshToken = user.refreshToken as string;
-        token.apiKeyAIService = user.apiKeyAIService;
+        token.username = user.username;
+        token.email = user.email as string;
+        token.accessToken = user.accessToken;
+        token.refreshToken = user.refreshToken;
+        token.apiKeyAIService = user.apiKeyAIService || "";
       }
       return token;
     },
     async session({ session, token }) {
-      console.log("Session callback token:", token); // Gỡ lỗi
-      session.user.id = token.id;
-      session.user.username = token.username;
-      session.user.email = token.email  as string;
-      session.tokens.accessToken = token.accessToken;
-      session.tokens.refreshToken = token.refreshToken;
-      session.user.apiKeyAIService = token.apiKeyAIService;
+      session.user = session.user || {
+        id: "",
+        username: "",
+        email: "",
+        apiKeyAIService: "",
+      };
+
+      session.user.id = token.id || "";
+      session.user.username = token.username || "";
+      session.user.email = token.email || "";
+      session.user.apiKeyAIService = token.apiKeyAIService || "";
+
+      session.tokens = {
+        accessToken: token.accessToken || "",
+        refreshToken: token.refreshToken || "",
+      };
+      console.log("Session callback:", { session, token });
       return session;
     },
   },
   pages: {
-    signIn: "/auth/signin",
+    signIn: "/auth/login",
+    error: "/auth/error",
   },
-  session: { strategy: "jwt" },
-  ...authConfig
-})
+});

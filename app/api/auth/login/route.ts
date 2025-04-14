@@ -1,28 +1,20 @@
-import { NextRequest, NextResponse } from "next/server";
-import { signIn } from "@/auth"; // đảm bảo là bản NextAuth từ server-side
+import { NextResponse } from 'next/server';
 
-export async function POST(req: NextRequest) {
+export async function POST(request: Request) {
   try {
-    const body = await req.json();
-    const { username, password } = body;
-
-    const result = await signIn("credentials", {
-      username,
-      password,
-      redirect: false, // Không redirect
+    const body = await request.json();
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/v1/api/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
     });
-
-    // Nếu không có lỗi thì đăng nhập thành công
-    return NextResponse.json({ success: true, message: "Đăng nhập thành công", result });
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (error: any) {
-    console.error("Login error:", error);
+    const data = await response.json();
+    return NextResponse.json(data, { status: response.status });
+  } catch (error) {
+    console.error('Proxy login error:', error);
     return NextResponse.json(
-      {
-        success: false,
-        message: error.message ?? "Login failed",
-      },
-      { status: 401 }
+      { success: false, error: 'Lỗi máy chủ' },
+      { status: 500 }
     );
   }
 }

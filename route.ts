@@ -29,4 +29,4 @@ export const apiAuthPrefix = "/api/auth"
  * Đường dẫn mặc định cho login
  * @type {string[]}
  */
-export const DEFAULT_LOGIN_REDIRECT = "/private/profie"
+export const DEFAULT_LOGIN_REDIRECT = "/private/profile"

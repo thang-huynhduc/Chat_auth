@@ -9,7 +9,7 @@ import { CardWrapper } from '@/components/auth/card-wrapper'
 import { Button } from '@/components/ui/button'
 import { useTransition } from 'react'
 import { RegisterSchema } from '@/schemas'
-import axios from 'axios'
+import { signUp } from '@/lib/api'
 import { toast } from 'sonner'
 
 const RegisterForm = () => {
@@ -28,17 +28,18 @@ const RegisterForm = () => {
   const onSubmit = (values: z.infer<typeof RegisterSchema>) => {
     startTransition(async () => {
       try {
-        const response = await axios.post('/api/auth/register', values);
-        if (response.data.code === 201) {
-          toast(response.data.message);
-          // window.location.href = "/login";
+        const result = await signUp(values.username, values.email, values.password)
+        if (result?.success) {
+          toast.error('Register Thành Công');
+          // window.location.href = '/auth/login';
         } else {
-          toast(response.data.message);
+          toast.success('Register , Please try again')
         }
       } catch (error) {
-        console.error(error);
-        toast("Đã xảy ra lỗi khi đăng ký");
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        toast.error('Register Failed: ' + ((error as any)?.message ?? 'Unknown error'));
       }
+
     })
   }
 
@@ -115,6 +116,7 @@ const RegisterForm = () => {
           <Button
             type="submit"
             className="w-full"
+            disabled={isPending}  
           >
             Create
           </Button>

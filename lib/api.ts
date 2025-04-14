@@ -52,7 +52,7 @@ export async function logout(): Promise<ApiResponse<any>> {
     });
     const data = await response.json();
     if (response.ok) {
-      await signOut({ redirect: false });
+      await signOut({ callbackUrl: '/'});
       return { success: true, data };
     }
     return { success: false, error: data.message || 'Đăng xuất thất bại' };
@@ -138,7 +138,7 @@ export async function sendOTP(email: string): Promise<ApiResponse<any>> {
     if (!email) {
       return { success: false, error: 'Email là bắt buộc' };
     }
-    const response = await fetch('/api/sendOTP', {
+    const response = await fetch('/api/auth/sendOTP', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email }),
@@ -161,7 +161,7 @@ export async function verifyOTP(email: string, otp: string): Promise<ApiResponse
     if (!email || !otp) {
       return { success: false, error: 'Email và OTP là bắt buộc' };
     }
-    const response = await fetch('/api/verifyOTP', {
+    const response = await fetch('/api/auth/verifyOTP', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, otp }),
@@ -188,7 +188,7 @@ export async function changePassword(email: string, oldPassword: string, newPass
     if (!session?.tokens.accessToken) {
       return { success: false, error: 'Không có access token' };
     }
-    const response = await fetch('/api/change/password', {
+    const response = await fetch('/api/auth/change-password', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -214,7 +214,7 @@ export async function resetPasswordGetOTP(email: string): Promise<ApiResponse<an
     if (!email) {
       return { success: false, error: 'Email là bắt buộc' };
     }
-    const response = await fetch('/api/reset/password/getOTP', {
+    const response = await fetch('/api/auth/getOTP', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email }),
@@ -241,7 +241,7 @@ export async function getAccountInfo(email: string): Promise<ApiResponse<any>> {
     if (!session?.tokens.accessToken) {
       return { success: false, error: 'Không có access token' };
     }
-    const response = await fetch('/api/account/getInfo', {
+    const response = await fetch('/api/auth/getInfo', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -274,7 +274,7 @@ export async function updateAccountInfo(info: any): Promise<ApiResponse<any>> {
     if (!session?.tokens.accessToken) {
       return { success: false, error: 'Không có access token' };
     }
-    const response = await fetch('/api/account/updateInfo', {
+    const response = await fetch('/api/auth/updateInfo', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

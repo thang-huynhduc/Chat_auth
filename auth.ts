@@ -79,7 +79,7 @@ export const {
         accessToken: token.accessToken || "",
         refreshToken: token.refreshToken || "",
       };
-      console.log("Session callback:", { session, token });
+      // console.log("Session callback:", { session, token });
       return session;
     },
   },

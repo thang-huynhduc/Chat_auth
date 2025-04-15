@@ -1,6 +1,4 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { getSession, signOut } from 'next-auth/react';
-
 // Interface cho response
 interface ApiResponse<T> {
   success: boolean;
@@ -17,8 +15,8 @@ export async function login(username: string, password: string): Promise<ApiResp
       return { success: false, error: 'Username và password là bắt buộc' };
     }
 
-    // Use a fully qualified URL
-    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+    const baseUrl = process.env.NEXTAUTH_URL ?? 'http://localhost:3000';
+
     const response = await fetch(`${baseUrl}/api/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -36,23 +34,18 @@ export async function login(username: string, password: string): Promise<ApiResp
   }
 }
 
+
 /**
  * Đăng xuất
  */
 export async function logout(): Promise<ApiResponse<any>> {
   try {
-    const session = await getSession();
-    if (!session?.tokens.refreshToken) {
-      return { success: false, error: 'Không có refresh token' };
-    }
     const response = await fetch('/api/auth/logout', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refreshToken: session.tokens.refreshToken }),
     });
     const data = await response.json();
     if (response.ok) {
-      await signOut({ callbackUrl: '/'});
       return { success: true, data };
     }
     return { success: false, error: data.message || 'Đăng xuất thất bại' };
@@ -86,21 +79,16 @@ export async function signUp(username: string, email: string, password: string):
 /**
  * Làm mới token
  */
-export async function refreshToken(): Promise<ApiResponse<{ accessToken: string }>> {
+export async function refreshToken(refreshToken: string): Promise<ApiResponse<{ accessToken: string }>> {
   try {
-    const session = await getSession();
-    if (!session?.tokens.refreshToken) {
-      return { success: false, error: 'Không có refresh token' };
-    }
     const response = await fetch('/api/auth/refreshToken', {
       method: 'GET',
-      headers: { 'Authorization': `Bearer ${session.tokens.refreshToken}` },
+      headers: { 'Authorization': `Bearer ${refreshToken}}` },
     });
     const data = await response.json();
     if (response.ok) {
       return { success: true, data: { accessToken: data.accessToken } };
     }
-    await signOut({ redirect: false });
     return { success: false, error: data.message || 'Làm mới token thất bại' };
   } catch (error) {
     return { success: false, error: `Lỗi khi làm mới token: ${error instanceof Error ? error.message : String(error)}` };
@@ -110,15 +98,11 @@ export async function refreshToken(): Promise<ApiResponse<{ accessToken: string 
 /**
  * Xác thực token
  */
-export async function authenticate(): Promise<ApiResponse<any>> {
+export async function authenticate(accessToken: string): Promise<ApiResponse<any>> {
   try {
-    const session = await getSession();
-    if (!session?.tokens.accessToken) {
-      return { success: false, error: 'Không có access token' };
-    }
     const response = await fetch('/api/auth/authentication', {
       method: 'GET',
-      headers: { 'Authorization': `Bearer ${session.tokens.accessToken}` },
+      headers: { 'Authorization': `Bearer ${accessToken}` },
     });
     const data = await response.json();
     if (response.ok) {
@@ -179,30 +163,26 @@ export async function verifyOTP(email: string, otp: string): Promise<ApiResponse
 /**
  * Đổi mật khẩu
  */
-export async function changePassword(email: string, oldPassword: string, newPassword: string): Promise<ApiResponse<any>> {
+export async function resetPassword(email: string, password: string): Promise<ApiResponse<any>> {
   try {
-    if (!email || !oldPassword || !newPassword) {
-      return { success: false, error: 'Email, mật khẩu cũ và mật khẩu mới là bắt buộc' };
+    if (!email || !password) {
+      return { success: false, error: 'Email và mật khẩu mới là bắt buộc' };
     }
-    const session = await getSession();
-    if (!session?.tokens.accessToken) {
-      return { success: false, error: 'Không có access token' };
-    }
-    const response = await fetch('/api/auth/change-password', {
+    const response = await fetch('/api/auth/resetPassword', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session.tokens.accessToken}`,
-      },
-      body: JSON.stringify({ email, oldPassword, newPassword }),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
     });
     const data = await response.json();
-    if (response.ok) {
+    if (response.ok && data.message === 'Đổi mật khẩu thành công') {
       return { success: true, data };
     }
     return { success: false, error: data.message || 'Đổi mật khẩu thất bại' };
   } catch (error) {
-    return { success: false, error: `Lỗi khi đổi mật khẩu: ${error instanceof Error ? error.message : String(error)}` };
+    return {
+      success: false,
+      error: `Lỗi khi đổi mật khẩu: ${error instanceof Error ? error.message : String(error)}`,
+    };
   }
 }
 
@@ -220,7 +200,7 @@ export async function resetPasswordGetOTP(email: string): Promise<ApiResponse<an
       body: JSON.stringify({ email }),
     });
     const data = await response.json();
-    if (response.ok) {
+    if (response.ok && data.message === 'Đã gửi mã OTP thành công') {
       return { success: true, data };
     }
     return { success: false, error: data.message || 'Gửi OTP reset mật khẩu thất bại' };
@@ -235,19 +215,15 @@ export async function resetPasswordGetOTP(email: string): Promise<ApiResponse<an
 /**
  * Lấy thông tin tài khoản
  */
-export async function getAccountInfo(email: string): Promise<ApiResponse<any>> {
+export async function getAccountInfo(username: string): Promise<ApiResponse<any>> {
   try {
-    const session = await getSession();
-    if (!session?.tokens.accessToken) {
-      return { success: false, error: 'Không có access token' };
+    if (!username) {
+      return { success: false, error: 'Username là bắt buộc' };
     }
     const response = await fetch('/api/auth/getInfo', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session.tokens.accessToken}`,
-      },
-      body: JSON.stringify({email}),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username }),
     });
     const data = await response.json();
     if (response.ok) {
@@ -265,21 +241,20 @@ export async function getAccountInfo(email: string): Promise<ApiResponse<any>> {
 /**
  * Cập nhật thông tin tài khoản
  */
-export async function updateAccountInfo(info: any): Promise<ApiResponse<any>> {
+export async function updateAccountInfo(info: {
+  username: string;
+  name?: string;
+  dateOfBirth?: string;
+  height?: number;
+  weight?: number;
+}): Promise<ApiResponse<any>> {
   try {
-    if (!info) {
-      return { success: false, error: 'Thông tin cập nhật là bắt buộc' };
-    }
-    const session = await getSession();
-    if (!session?.tokens.accessToken) {
-      return { success: false, error: 'Không có access token' };
+    if (!info.username) {
+      return { success: false, error: 'Username là bắt buộc' };
     }
     const response = await fetch('/api/auth/updateInfo', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session.tokens.accessToken}`,
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(info),
     });
     const data = await response.json();

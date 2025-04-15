@@ -4,7 +4,7 @@ import {
   authRoutes,
   publicRoutes
 } from "@/route"
-import { auth } from "./auth"
+import { auth } from "@/auth"
 
 
 export default auth((req) => {

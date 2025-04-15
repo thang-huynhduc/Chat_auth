@@ -2,12 +2,10 @@
 import Image from "next/image";
 import { assets } from "@/assets/assets";
 import { Button } from "@/components/ui/button";
-import { auth } from "@/auth";
 import AvatarDropdown from "@/components/Homepage/AvartarDropdown"; // Client component cho dropdown
+import { Session } from "next-auth";
 
-const NavBarForm = async () => {
-  const session = await auth(); // Lấy session server-side
-
+const NavBarForm = async ({ session } : { session: Session | null}) => {
   return (
     <div className="w-full flex justify-between items-center p-4 sm:p-6 sm:px-24 absolute top-0">
       <div className="flex items-center gap-2">

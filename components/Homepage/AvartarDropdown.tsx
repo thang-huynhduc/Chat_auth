@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { logout } from "@/lib/api";
+import { signOut } from "next-auth/react";
 
 type AvatarDropdownProps = {
   image: string;
@@ -28,6 +29,7 @@ const AvatarDropdown = ({ image, name }: AvatarDropdownProps) => {
   // Xử lý khi nhấp vào Logout
   const handleLogoutClick = async () => {
     logout();
+    signOut()
     setIsDropdownOpen(false);
   };
 

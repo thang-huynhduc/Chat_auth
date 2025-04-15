@@ -30,8 +30,33 @@ export const changePasswordSchema = z.object({
   newPassword: z.string().min(6, 'Mật khẩu mới phải có ít nhất 6 ký tự'),
 });
 
+export const profileSchema = z.object({
+  name: z.string().min(2, {
+    message: "Tên phải có ít nhất 2 ký tự",
+  }),
+  dateOfBirth: z.date({
+    required_error: "Vui lòng chọn ngày sinh",
+  }),
+  height: z.coerce
+    .number()
+    .positive({ message: "Chiều cao phải là số dương" })
+    .refine((val) => val > 0, {
+      message: "Chiều cao phải lớn hơn 0",
+    }),
+  weight: z.coerce
+    .number()
+    .positive({ message: "Cân nặng phải là số dương" })
+    .refine((val) => val > 0, {
+      message: "Cân nặng phải lớn hơn 0",
+    }),
+});
+
 export const updateInfoSchema = z.object({
   // Thêm các trường tùy thuộc vào yêu cầu, ví dụ:
   username: z.string().min(3, 'Username phải có ít nhất 3 ký tự').optional(),
   email: z.string().email('Email không hợp lệ').optional(),
+  name: z.string().min(2, 'Tên phải có ít nhất 2 ký tự').optional(),
+  dateOfBirth: z.string().optional(),
+  height: z.number().positive('Chiều cao phải là số dương').optional(),
+  weight: z.number().positive('Cân nặng phải là số dương').optional(),
 });

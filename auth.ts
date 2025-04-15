@@ -26,7 +26,7 @@ export const {
         }
 
         try {
-          const response = await login(credentials.username, credentials.password);
+          const response = await login(credentials.username as string, credentials.password as string);
           if (response.success && response.data?.code === 200) {
             const data = response.data;
             const user = {
@@ -49,7 +49,11 @@ export const {
       },
     }),
   ],
-  session: { strategy: "jwt" },
+  session: { 
+    strategy: "jwt",
+    maxAge: 24 * 60 * 60, // 1 ngày
+    updateAge: 12 * 60 * 60 // Update session after 12h
+  },
   callbacks: {
     async jwt({ token, user }) {
       if (user) {

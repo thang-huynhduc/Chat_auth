@@ -1,12 +1,11 @@
 import { assets } from "@/assets/assets";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import { auth } from "@/auth";
+import { Session } from "next-auth";
 
-const HeaderHome = async () => {
-  const session = await auth(); // Lấy session server-side
-  const displayName = session?.user?.username || "Devoloper"; // Sử dụng name hoặc mặc định là "Devoloper"
-
+// Nhận session từ props thay vì gọi auth()
+const HeaderHome = ({ session }: { session: Session | null }) => {
+  const displayName = session?.user?.username || "Devoloper";
   return (
     <div className="flex flex-col items-center mt-20 px-4 text-center">
       <Image
@@ -33,7 +32,8 @@ const HeaderHome = async () => {
         <Image src={assets.arrow_icon} alt="->" className="w-4 h-4" />
       </Button>
       <div className="text-lg sm:text-xl text-gray-700 font-medium italic max-w-xl mx-auto mb-6 mt-8">
-        Build smarter. <span className="text-indigo-600 font-semibold">Chat faster.</span>{" "}
+        Build smarter.{" "}
+        <span className="text-indigo-600 font-semibold">Chat faster.</span>{" "}
         <span className="text-emerald-600 font-semibold">Code like a legend.</span>
       </div>
     </div>

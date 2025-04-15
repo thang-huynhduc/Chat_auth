@@ -1,15 +1,10 @@
-import { auth } from "@/auth";
-import SignOutButton from "@/components/auth/signout-button"
+import ProfileForm from '@/components/profile/profile-form'
+import React from 'react'
 
-const ProFilePage = async () => {
-  const session = await auth()
+const ProfilePage = () => {
   return (
-      <div>
-      <h1>Welcome, {session?.user.username}</h1>
-        {JSON.stringify(session, null, 2)}
-        <SignOutButton />
-      </div>
-  );
+    <ProfileForm />
+  )
 }
 
-export default ProFilePage
+export default ProfilePage

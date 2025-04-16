@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/v1/api/reset/getOTP`, {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/v1/api/reset/password/getOTP`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),

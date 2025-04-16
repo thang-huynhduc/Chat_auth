@@ -38,34 +38,27 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlertCircle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-
-// Schema cho form cập nhật thông tin
-const profileSchema = z.object({
-  name: z.string().min(2, "Tên phải có ít nhất 2 ký tự"),
-  dateOfBirth: z.string().regex(/^\d{2}-\d{2}-\d{4}$/, "Ngày sinh phải có định dạng DD-MM-YYYY"),
-  height: z.coerce.number().min(50, "Chiều cao phải lớn hơn 50cm").max(250, "Chiều cao không được quá 250cm"),
-  weight: z.coerce.number().min(20, "Cân nặng phải lớn hơn 20kg").max(300, "Cân nặng không được quá 300kg"),
-});
+import { profileSchema } from "@/schemas";
 
 type ProfileData = z.infer<typeof profileSchema> & {
   age?: number;
   bmi?: number;
 };
 
-const ProfileForm = () => {
+const ProfilePage = () => {
   const { data: session, status } = useSession();
   const router = useRouter();
   
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [isEditing, setIsEditing] = useState(false);
+  const [tabValue, setTabValue] = useState("profile");
 
   // Khởi tạo form
   const form = useForm<z.infer<typeof profileSchema>>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
+      username: "",
       name: "",
       dateOfBirth: "",
       height: 0,
@@ -73,67 +66,92 @@ const ProfileForm = () => {
     },
   });
 
-  // Tải thông tin profile
+  // Tải thông tin profile từ localStorage hoặc API
   useEffect(() => {
     const fetchProfile = async () => {
       if (status === "loading") return;
       if (status === "unauthenticated") {
-        router.push("/login");
+        router.push("/auth/login");
         return;
       }
 
-      setLoading(true);
-      setError(null);
-
-      try {
-        const response = await getAccountInfo(session?.user.username as string);
-        if (response.success && response.data) {
-          const profileData = response.data.data || {};
-          setProfile(profileData);
-          
-          // Cập nhật giá trị mặc định cho form
-          form.reset({
-            name: profileData.name || "",
-            dateOfBirth: profileData.dateOfBirth || "",
-            height: profileData.height || 0,
-            weight: profileData.weight || 0,
-          });
-        } else {
-          setError(response.error || "Không thể tải thông tin profile");
-        }
-      } catch (err) {
-        setError("Đã xảy ra lỗi khi tải thông tin profile");
-        console.error(err);
-      } finally {
+      if (!session?.tokens?.accessToken) {
+        setError("Không tìm thấy access token");
         setLoading(false);
+        return;
+      }
+
+      // Kiểm tra localStorage trước
+      const storedProfile = localStorage.getItem("profile");
+      if (storedProfile) {
+        const profileData = JSON.parse(storedProfile);
+        setProfile(profileData);
+        form.reset({
+          username: session.user.username || "",
+          name: profileData.name || "",
+          dateOfBirth: profileData.dateOfBirth || "",
+          height: profileData.height || 0,
+          weight: profileData.weight || 0,
+        });
+        setLoading(false);
+      } else {
+        // Chỉ gọi API nếu không có dữ liệu trong localStorage
+        setLoading(true);
+        setError(null);
+
+        try {
+          const response = await getAccountInfo(session.user.username);
+          if (response.success && response.data) {
+            const profileData = response.data.data || {};
+            setProfile(profileData);
+            localStorage.setItem("profile", JSON.stringify(profileData));
+            form.reset({
+              username: session.user.username || "",
+              name: profileData.name || "",
+              dateOfBirth: profileData.dateOfBirth || "",
+              height: profileData.height || 0,
+              weight: profileData.weight || 0,
+            });
+          } else {
+            setError(response.error || "Không thể tải thông tin profile");
+          }
+        } catch (err) {
+          setError("Đã xảy ra lỗi khi tải thông tin profile");
+          console.error(err);
+        } finally {
+          setLoading(false);
+        }
       }
     };
 
     fetchProfile();
-  }, [status, router, form, session?.user.username]);
+  }, [router, form, session, status]);
 
   // Xử lý cập nhật thông tin
   const onSubmit = async (values: z.infer<typeof profileSchema>) => {
     try {
-      // Kiểm tra sesssion
-      if (!session || !session.user) {
+      if (!session?.tokens?.accessToken) {
         toast.error("Bạn cần đăng nhập để thực hiện thao tác này");
         return;
       }
 
       const response = await updateAccountInfo({
-        username: session.user.username,
-        ...values,
+        username: values.username,
+        name: values.name,
+        dateOfBirth: values.dateOfBirth,
+        height: values.height,
+        weight: values.weight,
       });
 
       if (response.success) {
-        // Cập nhật lại state profile với data mới
-        setProfile({
+        const updatedProfile = {
           ...values,
           age: profile?.age,
           bmi: profile?.bmi,
-        });
-        setIsEditing(false);
+        };
+        setProfile(updatedProfile);
+        localStorage.setItem("profile", JSON.stringify(updatedProfile)); // Lưu vào localStorage
+        setTabValue("profile");
         toast.success("Cập nhật thông tin thành công");
       } else {
         toast.error(response.error || "Cập nhật thông tin thất bại");
@@ -165,12 +183,10 @@ const ProfileForm = () => {
 
   return (
     <div className="container max-w-4xl mx-auto p-4">
-      <Tabs defaultValue="profile" className="w-full">
+      <Tabs value={tabValue} onValueChange={setTabValue} className="w-full">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="profile">Thông tin cá nhân</TabsTrigger>
-          <TabsTrigger value="edit" onClick={() => setIsEditing(true)}>
-            Cập nhật thông tin
-          </TabsTrigger>
+          <TabsTrigger value="edit">Cập nhật thông tin</TabsTrigger>
         </TabsList>
 
         <TabsContent value="profile">
@@ -185,6 +201,10 @@ const ProfileForm = () => {
               {profile ? (
                 <>
                   <div className="grid md:grid-cols-2 gap-4">
+                    <div>
+                      <h3 className="text-sm font-medium">Username</h3>
+                      <p className="text-base">{session?.user.username || "Chưa cập nhật"}</p>
+                    </div>
                     <div>
                       <h3 className="text-sm font-medium">Họ và tên</h3>
                       <p className="text-base">{profile.name || "Chưa cập nhật"}</p>
@@ -215,11 +235,30 @@ const ProfileForm = () => {
                 <p>Không có thông tin profile</p>
               )}
             </CardContent>
-            <CardFooter>
-              <Button variant="outline" onClick={() => setIsEditing(true)}>
+            <CardFooter className="flex flex-wrap gap-2">
+              <Button
+                variant="outline"
+                className="flex-1 min-w-[120px]"
+                onClick={() => setTabValue("edit")}
+              >
                 Cập nhật thông tin
               </Button>
+              <Button
+                variant="outline"
+                className="flex-1 min-w-[120px]"
+                onClick={() => router.push("/auth/change-password")}
+              >
+                Đổi mật khẩu
+              </Button>
+              <Button
+                variant="outline"
+                className="flex-1 min-w-[120px]"
+                onClick={() => router.push("/")}
+              >
+                Quay về trang chủ
+              </Button>
             </CardFooter>
+
           </Card>
         </TabsContent>
 
@@ -296,7 +335,7 @@ const ProfileForm = () => {
                   </div>
 
                   <div className="flex justify-end gap-2 mt-4">
-                    <Button variant="outline" type="button" onClick={() => setIsEditing(false)}>
+                    <Button variant="outline" type="button" onClick={() => setTabValue("profile")}>
                       Hủy
                     </Button>
                     <Button type="submit">Lưu thay đổi</Button>
@@ -309,7 +348,7 @@ const ProfileForm = () => {
       </Tabs>
     </div>
   );
-}
+};
 
 // Component skeleton cho trạng thái loading
 function ProfileSkeleton() {
@@ -336,4 +375,4 @@ function ProfileSkeleton() {
   );
 }
 
-export default ProfileForm;
+export default ProfilePage;

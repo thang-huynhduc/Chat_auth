@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { verifyOTP, resetPasswordGetOTP, resetPassword } from "@/lib/api";
-import { emailSchema, otpSchema, RegisterSchema } from "@/schemas";
+import { emailSchema, otpSchema } from "@/schemas";
 import {
   Form,
   FormControl,
@@ -18,6 +18,11 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { CardWrapper } from "@/components/auth/card-wrapper";
 import { toast } from "sonner";
+
+// Schema cho reset password
+const resetPasswordSchema = z.object({
+  newPassword: z.string().min(8, "Mật khẩu phải có ít nhất 8 ký tự"),
+});
 
 export default function ResetPasswordForm() {
   const [step, setStep] = useState(1);
@@ -36,12 +41,10 @@ export default function ResetPasswordForm() {
     defaultValues: { otp: "" },
   });
 
-  // Form cho bước 3: Nhập username và password
-  const signUpForm = useForm<z.infer<typeof RegisterSchema>>({
-    resolver: zodResolver(RegisterSchema),
-    defaultValues: { 
-      email: "",
-      password: "" },
+  // Form cho bước 3: Nhập password
+  const resetForm = useForm<z.infer<typeof resetPasswordSchema>>({
+    resolver: zodResolver(resetPasswordSchema),
+    defaultValues: { newPassword: "" },
   });
 
   // Xử lý gửi OTP (Bước 1)
@@ -68,7 +71,6 @@ export default function ResetPasswordForm() {
       try {
         const result = await verifyOTP(email, values.otp);
         if (result.success) {
-          signUpForm.reset({ email, username: "", password: "" });
           setStep(3);
           toast.success("OTP xác thực thành công!");
         } else {
@@ -80,20 +82,20 @@ export default function ResetPasswordForm() {
     });
   };
 
-  // Xử lý đăng ký (Bước 3)
-  const handleReset = (values: z.infer<typeof RegisterSchema>) => {
+  // Xử lý reset mật khẩu (Bước 3)
+  const handleReset = (values: z.infer<typeof resetPasswordSchema>) => {
     startTransition(async () => {
       try {
-        const result = await resetPassword( email, values.password);
-        console.log("Kết quả từ signUp:", result);
+        const result = await resetPassword(email, values.newPassword);
+        console.log("Kết quả từ resetPassword:", result);
         if (result.success) {
-          toast.success("Reset Pasword Successful!");
+          toast.success("Reset Password Successful!");
           window.location.href = "/login";
         } else {
-          toast.error(result.error || "Đăng ký thất bại");
+          toast.error(result.error || "Reset mật khẩu thất bại");
         }
       } catch {
-        toast.error("Đã xảy ra lỗi khi đăng ký");
+        toast.error("Đã xảy ra lỗi khi reset mật khẩu");
       }
     });
   };
@@ -108,16 +110,13 @@ export default function ResetPasswordForm() {
           : "Finish soon!"
       }
       backButtonLabel="Back to login?"
-      backButtonHref="/auth/login" 
-      showSocial={false}     
+      backButtonHref="/auth/login"
+      showSocial={false}
     >
       {/* Bước 1: Nhập email */}
       {step === 1 && (
         <Form {...emailForm}>
-          <form
-            onSubmit={emailForm.handleSubmit(handleSendOTP)}
-            className="space-y-6"
-          >
+          <form onSubmit={emailForm.handleSubmit(handleSendOTP)} className="space-y-6">
             <FormField
               control={emailForm.control}
               name="email"
@@ -146,10 +145,7 @@ export default function ResetPasswordForm() {
       {/* Bước 2: Nhập OTP */}
       {step === 2 && (
         <Form {...otpForm}>
-          <form
-            onSubmit={otpForm.handleSubmit(handleVerifyOTP)}
-            className="space-y-6"
-          >
+          <form onSubmit={otpForm.handleSubmit(handleVerifyOTP)} className="space-y-6">
             <FormField
               control={otpForm.control}
               name="otp"
@@ -157,11 +153,7 @@ export default function ResetPasswordForm() {
                 <FormItem>
                   <FormLabel>Mã OTP</FormLabel>
                   <FormControl>
-                    <Input
-                      {...field}
-                      disabled={isPending}
-                      placeholder="XXXXXX"
-                    />
+                    <Input {...field} disabled={isPending} placeholder="XXXXXX" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -174,16 +166,13 @@ export default function ResetPasswordForm() {
         </Form>
       )}
 
-      {/* Bước 3: Nhập username và password */}
+      {/* Bước 3: Nhập password */}
       {step === 3 && (
-        <Form {...signUpForm}>
-          <form
-            onSubmit={signUpForm.handleSubmit(handleReset)}
-            className="space-y-6"
-          >
+        <Form {...resetForm}>
+          <form onSubmit={resetForm.handleSubmit(handleReset)} className="space-y-6">
             <FormField
-              control={signUpForm.control}
-              name="password"
+              control={resetForm.control}
+              name="newPassword"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Password</FormLabel>
@@ -199,8 +188,8 @@ export default function ResetPasswordForm() {
                 </FormItem>
               )}
             />
-            <Button type="submit" className="w-full">
-              Register
+            <Button type="submit" className="w-full" disabled={isPending}>
+              Reset Password
             </Button>
           </form>
         </Form>

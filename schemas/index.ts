@@ -31,24 +31,14 @@ export const changePasswordSchema = z.object({
 });
 
 export const profileSchema = z.object({
-  name: z.string().min(2, {
-    message: "Tên phải có ít nhất 2 ký tự",
-  }),
-  dateOfBirth: z.date({
-    required_error: "Vui lòng chọn ngày sinh",
-  }),
-  height: z.coerce
-    .number()
-    .positive({ message: "Chiều cao phải là số dương" })
-    .refine((val) => val > 0, {
-      message: "Chiều cao phải lớn hơn 0",
-    }),
-  weight: z.coerce
-    .number()
-    .positive({ message: "Cân nặng phải là số dương" })
-    .refine((val) => val > 0, {
-      message: "Cân nặng phải lớn hơn 0",
-    }),
+  username: z
+    .string()
+    .min(3, "Username phải có ít nhất 3 ký tự")
+    .regex(/^[a-zA-Z0-9_-]+$/, "Username chỉ chứa chữ cái, số, gạch dưới hoặc gạch ngang"),
+  name: z.string().min(2, "Tên phải có ít nhất 2 ký tự"),
+  dateOfBirth: z.string().regex(/^\d{2}-\d{2}-\d{4}$/, "Ngày sinh phải có định dạng DD-MM-YYYY"),
+  height: z.coerce.number().min(50, "Chiều cao phải lớn hơn 50cm").max(250, "Chiều cao không được quá 250cm"),
+  weight: z.coerce.number().min(20, "Cân nặng phải lớn hơn 20kg").max(300, "Cân nặng không được quá 300kg"),
 });
 
 export const updateInfoSchema = z.object({

@@ -5,6 +5,7 @@ interface ApiResponse<T> {
   data?: T;
   error?: string;
 }
+const baseUrl = process.env.NEXTAUTH_URL ?? 'http://localhost:3000';
 
 /**
  * Đăng nhập
@@ -15,7 +16,6 @@ export async function login(username: string, password: string): Promise<ApiResp
       return { success: false, error: 'Username và password là bắt buộc' };
     }
 
-    const baseUrl = process.env.NEXTAUTH_URL ?? 'http://localhost:3000';
 
     const response = await fetch(`${baseUrl}/api/auth/login`, {
       method: 'POST',
@@ -194,7 +194,7 @@ export async function resetPasswordGetOTP(email: string): Promise<ApiResponse<an
     if (!email) {
       return { success: false, error: 'Email là bắt buộc' };
     }
-    const response = await fetch('/api/auth/getOTP', {
+    const response = await fetch(`${baseUrl}/api/auth/getOTP`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email }),

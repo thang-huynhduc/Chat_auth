@@ -35,5 +35,10 @@ export default auth((req) => {
  
 // Optionally, don't invoke Middleware on some paths
 export const config = {
-  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
+  matcher: [// Chỉ áp dụng middleware cho các route cần bảo vệ
+  "/private/:path*",
+  "/dashboard/:path*",
+  // Bỏ các route tĩnh hoặc không cần kiểm tra
+  "/((?!api|_next/static|_next/image|favicon.ico|public).*)",
+]
 }

@@ -30,6 +30,11 @@ export const changePasswordSchema = z.object({
   newPassword: z.string().min(6, 'Mật khẩu mới phải có ít nhất 6 ký tự'),
 });
 
+// Schema cho reset password
+export const ResetSchema = z.object({
+  newPassword: z.string().min(8, "Mật khẩu phải có ít nhất 8 ký tự"),
+});
+
 export const profileSchema = z.object({
   username: z
     .string()

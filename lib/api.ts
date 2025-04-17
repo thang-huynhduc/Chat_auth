@@ -40,6 +40,7 @@ export async function login(username: string, password: string): Promise<ApiResp
  */
 export async function logout(): Promise<ApiResponse<any>> {
   try {
+    localStorage.clear();
     const response = await fetch('/api/auth/logout', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
